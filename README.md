@@ -7,13 +7,15 @@ Interface web de test de l'API `calendrier-ffe-api`. Pages statiques (HTML, CSS,
 L'API doit tourner (voir `../calendrier-ffe-api`), puis :
 
 ```bash
+cp .env.example .env   # puis adapter les ports si besoin
 docker compose up -d --build
 ```
 
-Ouvrir http://127.0.0.1:8080
+Ouvrir http://127.0.0.1:8080 (ou le port choisi dans `WEB_PORT`)
 
-- L'adresse de l'API se règle avec la variable `API_URL` (par défaut `http://127.0.0.1:8765`), par exemple
-  `API_URL=https://calendrier-ffe.benribs.fr docker compose up -d`.
+- Réglages dans `.env` (copier `.env.example`) :
+  - `WEB_PORT` : port de l'interface sur la machine (8080 par défaut) ; `WEB_BIND` : adresse d'écoute (`127.0.0.1` par défaut) ;
+  - `API_URL` : adresse de l'API vue depuis le navigateur (par défaut `http://127.0.0.1:8765`, à aligner sur `API_PORT` de l'API).
   On peut aussi la changer directement dans le bandeau de la page (elle est mémorisée dans le navigateur),
   ou via `?api=` dans l'URL.
 - Le dossier `public/` est monté dans le conteneur : une modification est visible au simple rechargement de la page.
