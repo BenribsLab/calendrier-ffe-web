@@ -76,7 +76,11 @@ legend { font-weight: 600; font-size: .85rem; text-transform: uppercase; color: 
 .ligne-ics input { flex: 1; min-width: 14rem; padding: .35rem; border: 1px solid var(--bord); border-radius: 6px; font-family: ui-monospace, monospace; font-size: .8rem; }
 .aide { font-size: .8rem; color: var(--doux); }
 
-.sources-etat { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .8rem; font-size: .8rem; }
+.ligne-sources { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; margin-bottom: .8rem; }
+.ligne-sources #reconstruire { font-size: .8rem; padding: .2rem .7rem; }
+.ligne-sources #reconstruire[disabled] { opacity: .6; cursor: progress; }
+.ligne-sources .aide { margin: 0; }
+.sources-etat { display: flex; gap: .5rem; flex-wrap: wrap; font-size: .8rem; }
 .sources-etat span { padding: .15rem .6rem; border-radius: 999px; border: 1px solid var(--bord); background: var(--carte); }
 .sources-etat .ok::before { content: "● "; color: var(--ok); }
 .sources-etat .perime::before { content: "● "; color: var(--alerte); }
@@ -123,7 +127,7 @@ dialog dd { margin: 0; }
 @media print {
   @page { margin: 12mm; }
   body { background: #fff; }
-  .entete, .filtres, .barre, .abonnement, .sources-etat, .calendrier-nav button { display: none !important; }
+  .entete, .filtres, .barre, .abonnement, .ligne-sources, .calendrier-nav button { display: none !important; }
   .page { display: block; padding: 0; }
   .titre-impression { display: block; font-size: 1.1rem; margin: 0 0 .5rem; }
   .liste { border: 0; }

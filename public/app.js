@@ -182,6 +182,46 @@ async function rechercher() {
   }
 }
 
+// --- Reconstruction des calendriers PDF (CDE 91, Ligue IDF) ---------------------------------
+
+async function reconstruire() {
+  const bouton = $("#reconstruire");
+  const statut = $("#reconstruire-etat");
+  let jeton = lirePref("jeton-admin", "");
+  if (!jeton) {
+    jeton = (window.prompt("Jeton d'administration de l'API (CAL_ADMIN_TOKEN du fichier .env) :") || "").trim();
+    if (!jeton) return;
+  }
+  const libelle = bouton.textContent;
+  bouton.disabled = true;
+  statut.textContent = "";
+  const bilans = [];
+  try {
+    for (const source of ["cde91", "idf"]) {
+      bouton.textContent = `Reconstruction ${SOURCES[source]}…`;
+      const r = await fetch(`${etat.api}/calendriers/${source}/refresh`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${jeton}` },
+      });
+      if (r.status === 401) {
+        ecrirePref("jeton-admin", "");
+        throw new Error("jeton refusé");
+      }
+      if (!r.ok) throw new Error(`${SOURCES[source]} : ${r.status} ${r.statusText}`);
+      const d = await r.json();
+      bilans.push(`${SOURCES[source]} : ${d.erreur ? `erreur (${d.erreur})` : `${d.nb_evenements} événements`}`);
+    }
+    ecrirePref("jeton-admin", jeton);
+    statut.textContent = `✓ ${bilans.join(" · ")}`;
+    await rechercher();
+  } catch (e) {
+    statut.textContent = `Échec : ${e.message}${bilans.length ? ` (${bilans.join(" · ")})` : ""}`;
+  } finally {
+    bouton.disabled = false;
+    bouton.textContent = libelle;
+  }
+}
+
 function afficherSources(sources) {
   $("#sources-etat").innerHTML = Object.entries(sources)
     .map(([code, s]) => {
@@ -376,6 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#f-region").addEventListener("change", majDepartements);
   $("#reinitialiser").addEventListener("click", () => { appliquerParametres(new URLSearchParams()); rechercher(); });
   $("#imprimer").addEventListener("click", () => window.print());
+  $("#reconstruire").addEventListener("click", reconstruire);
   $("#ics-copier").addEventListener("click", async () => {
     try { await navigator.clipboard.writeText($("#ics-url").value); $("#ics-copier").textContent = "Copié !"; }
     catch { $("#ics-url").select(); }

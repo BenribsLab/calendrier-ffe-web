@@ -91,7 +91,13 @@
           puis importez le fichier (Google Agenda → Paramètres → Importer).</p>
       </details>
 
-      <div id="sources-etat" class="sources-etat"></div>
+      <div class="ligne-sources">
+        <div id="sources-etat" class="sources-etat"></div>
+        <button type="button" id="reconstruire" title="Retélécharge et réanalyse les calendriers PDF du CDE 91 et de la Ligue IDF (jeton d'administration requis)">
+          Reconstruire les calendriers CDE et Ligue
+        </button>
+        <span id="reconstruire-etat" class="aide" role="status"></span>
+      </div>
       <h2 id="titre-impression" class="titre-impression"></h2>
       <div id="resultats" aria-live="polite"></div>
     </main>
