@@ -20,6 +20,14 @@ Ouvrir http://127.0.0.1:8080 (ou le port choisi dans `WEB_PORT`)
   ou via `?api=` dans l'URL.
 - Le dossier `public/` est monté dans le conteneur : une modification est visible au simple rechargement de la page.
 
+## Sécurité
+
+- Politique de sécurité du contenu (CSP) : seuls les scripts du site s'exécutent ; liens venus des données limités
+  à `http(s)` ; en-têtes `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` ; version de nginx masquée.
+- Conteneur en lecture seule, privilèges minimaux, ressources limitées.
+- **Interface d'administration** (remplacement de calendriers, jeton mémorisé dans le navigateur) : c'est un outil de
+  test, à ne pas laisser ouvert au public. En production, la protéger (authentification Apache, restriction d'IP).
+
 ## Fonctions
 
 - Filtres : sources, armes, catégories, région / département, ville, période, niveau FFE, individuel / équipe.

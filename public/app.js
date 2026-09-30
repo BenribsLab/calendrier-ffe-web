@@ -17,6 +17,8 @@ const CHAMPS_SIMPLES = ["region", "departement", "ville", "date_debut", "date_fi
 const JOURS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
 
 const $ = (sel) => document.querySelector(sel);
+/** Lien venu des données : seulement http(s) (jamais javascript:, data:…), sinon lien inerte. */
+const lienSur = (url) => (/^https?:\/\//i.test(String(url || "").trim()) ? String(url).trim() : "#");
 const esc = (v) =>
   String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
@@ -299,7 +301,7 @@ async function chargerCalendriers() {
           <tr>
             <td>${esc(c.libelle)}</td>
             <td>${c.calendriers.length
-              ? c.calendriers.map((f) => `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.nom)}</a>`).join("<br>")
+              ? c.calendriers.map((f) => `<a href="${esc(lienSur(f.url))}" target="_blank" rel="noopener">${esc(f.nom)}</a>`).join("<br>")
               : "<em>aucun</em>"}</td>
             <td><span class="mode mode-${esc(c.mode)}">${esc(MODES[c.mode] || c.mode)}</span>${c.depuis ? `<br><small>depuis le ${esc(fmtDateHeure(c.depuis))}</small>` : ""}</td>
           </tr>`).join("")}
@@ -549,7 +551,7 @@ async function ouvrirDetail(id) {
     ["Sources", c.sources.map((s) => SOURCES[s] || s).join(" + ")],
   ].filter(([, v]) => v);
   const note = c.note_organisation
-    ? `<a class="bouton" href="${esc(c.note_organisation)}" target="_blank" rel="noopener">Note d'organisation (PDF)</a>`
+    ? `<a class="bouton" href="${esc(lienSur(c.note_organisation))}" target="_blank" rel="noopener">Note d'organisation (PDF)</a>`
     : c.id.startsWith("ffe-") ? `<span class="aide">Note d'organisation pas encore publiée</span>` : "";
   $("#detail-contenu").innerHTML = `
     <h3>${badgesArmes(c.armes)} ${esc(c.titre)}</h3>
@@ -557,9 +559,9 @@ async function ouvrirDetail(id) {
     ${erreur ? `<p class="erreur">Détail indisponible : ${esc(erreur)}</p>` : ""}
     <div class="liens">
       ${note}
-      ${c.site_web ? `<a class="bouton" href="${esc(c.site_web)}" target="_blank" rel="noopener">Site de l'organisateur</a>` : ""}
-      ${c.id.startsWith("ffe-") && c.url ? `<a class="bouton" href="${esc(c.url)}" target="_blank" rel="noopener">Fiche FFE</a>` : ""}
-      ${(c.calendriers || []).map((cal) => `<a class="bouton" href="${esc(cal.url)}" target="_blank" rel="noopener">${esc(cal.libelle)} (PDF)</a>`).join("")}
+      ${c.site_web ? `<a class="bouton" href="${esc(lienSur(c.site_web))}" target="_blank" rel="noopener">Site de l'organisateur</a>` : ""}
+      ${c.id.startsWith("ffe-") && c.url ? `<a class="bouton" href="${esc(lienSur(c.url))}" target="_blank" rel="noopener">Fiche FFE</a>` : ""}
+      ${(c.calendriers || []).map((cal) => `<a class="bouton" href="${esc(lienSur(cal.url))}" target="_blank" rel="noopener">${esc(cal.libelle)} (PDF)</a>`).join("")}
       <a class="bouton" href="${esc(lienGoogleEvenement(c))}" target="_blank" rel="noopener">Ajouter à Google Agenda</a>
     </div>`;
 }

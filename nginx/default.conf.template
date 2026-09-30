@@ -5,16 +5,30 @@ server {
     root /usr/share/nginx/html;
     index index.html;
     charset utf-8;
+    server_tokens off;  # ne pas afficher la version de nginx
+
+    # En-têtes de sécurité (répétés dans chaque location : un add_header de location masque ceux du serveur).
+    # CSP : seuls les scripts du site s'exécutent (aucun script injecté ne peut tourner) ; styles en ligne autorisés
+    # (attributs style=) ; appels réseau vers l'API (adresse réglable dans le bandeau : connect-src ouvert).
+    set $csp "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src *; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'";
 
     # Adresse de l'API injectée au démarrage (surcharge public/config.js)
     location = /config.js {
         default_type application/javascript;
-        add_header Cache-Control "no-store";
+        add_header Cache-Control "no-store" always;
+        add_header Content-Security-Policy $csp always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "no-referrer" always;
         return 200 'window.CALENDRIER_API = "${API_URL}";\n';
     }
 
     location / {
-        add_header Cache-Control "no-cache";
+        add_header Cache-Control "no-cache" always;
+        add_header Content-Security-Policy $csp always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
+        add_header Referrer-Policy "no-referrer" always;
         # Pas de repli sur index.html : une adresse inconnue (ex. un lien de l'API mal configuré) donne une vraie 404
         try_files $uri $uri/ =404;
     }
