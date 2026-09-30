@@ -24,6 +24,9 @@ Ouvrir http://127.0.0.1:8080 (ou le port choisi dans `WEB_PORT`)
 
 - Filtres : sources, armes, catégories, région / département, ville, période, niveau FFE, individuel / équipe.
   Les filtres sont reportés dans l'URL de la page (on peut la partager ou la mettre en favori).
+- **Distance** : « à moins de X km » d'une commune saisie ou de la position du navigateur (« Utiliser ma position »,
+  localisation précise GPS / Wi-Fi, avec l'autorisation de l'utilisateur ; nécessite HTTPS). Distance à vol d'oiseau,
+  affichée sur chaque compétition.
 - Vue **Liste** (par mois) et vue **Mois** (grille calendrier), avec une mise en page pour l'**impression**.
 - Clic sur une compétition : détail, note d'organisation, site de l'organisateur, ajout de l'événement à Google Agenda.
 - **Reconstruire les calendriers CDE et Ligue** : relance leur téléchargement et leur analyse (jeton d'administration).

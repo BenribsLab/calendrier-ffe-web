@@ -13,7 +13,7 @@ const CATEGORIES = ["M5", "M7", "M9", "M11", "M13", "M15", "M17", "M20", "SENIOR
 const SOURCES = { ffe: "FFE", cde91: "CDE 91", idf: "Ligue IDF" };
 const TYPES = { tournoi: "Tournoi", epreuve: "Épreuve", championnat: "Championnat" };
 const ECHELONS = { departemental: "départemental", regional: "régional", zone: "de zone", national: "national", international: "international" };
-const CHAMPS_SIMPLES = ["region", "departement", "ville", "date_debut", "date_fin", "niveau", "equipe"];
+const CHAMPS_SIMPLES = ["region", "departement", "ville", "date_debut", "date_fin", "niveau", "equipe", "pres_de", "lat", "lon", "rayon"];
 const JOURS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
 
 const $ = (sel) => document.querySelector(sel);
@@ -136,6 +136,7 @@ function parametres() {
   if ($("#f-officielle").checked) p.set("officielle", "true");
   // Une région + un département : le département suffit (sinon l'API ferait un OU).
   if (p.has("departement")) p.delete("region");
+  if (p.has("lat")) p.delete("pres_de"); // la position du navigateur est prioritaire sur la commune saisie
   return p;
 }
 
@@ -147,6 +148,7 @@ function appliquerParametres(p) {
   }
   if (!p.has("source")) form.querySelectorAll("input[name=source]").forEach((i) => { i.checked = true; });
   $("#f-officielle").checked = p.get("officielle") === "true";
+  $("#f-position-etat").textContent = p.get("lat") ? "Position du navigateur utilisée." : "";
   for (const nom of CHAMPS_SIMPLES) {
     if (nom === "departement") majDepartements();
     form.elements[nom].value = p.get(nom) || "";
@@ -173,7 +175,9 @@ async function rechercher() {
     etat.competitions = d.competitions;
     etat.moisAffiche = null;
     afficherSources(d.sources);
-    $("#resume").textContent = `${d.count} compétition${d.count > 1 ? "s" : ""}`;
+    $("#resume").textContent = `${d.count} compétition${d.count > 1 ? "s" : ""}` +
+      (d.depart && d.depart.rayon_km ? ` à moins de ${d.depart.rayon_km} km de ${d.depart.nom || "ma position"}` : "") +
+      (d.sans_position ? ` (${d.sans_position} sans lieu connu, non affichée${d.sans_position > 1 ? "s" : ""})` : "");
     $("#titre-impression").textContent = titreImpression(p, d.count);
     afficher();
   } catch (e) {
@@ -182,6 +186,43 @@ async function rechercher() {
     $("#sources-etat").innerHTML = "";
     $("#resultats").innerHTML = `<div class="erreur">Erreur : ${esc(e.message)}</div>`;
   }
+}
+
+// --- Filtre de distance : position du navigateur ----------------------------------------------
+
+const fmtKm = (km) => `${km.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} km`;
+
+function localiser() {
+  const statut = $("#f-position-etat");
+  if (!("geolocation" in navigator)) {
+    statut.textContent = "Ce navigateur ne sait pas donner sa position.";
+    return;
+  }
+  if (!window.isSecureContext) {
+    statut.textContent = "La localisation demande une page en HTTPS.";
+    return;
+  }
+  statut.textContent = "Localisation en cours…";
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      // Arrondi à 3 décimales (~100 m) : suffisant pour un rayon en km, et l'URL partagée reste peu précise
+      $("#f-lat").value = pos.coords.latitude.toFixed(3);
+      $("#f-lon").value = pos.coords.longitude.toFixed(3);
+      $("#f-pres-de").value = "";
+      const precision = Math.round(pos.coords.accuracy);
+      statut.textContent = precision > 2000
+        ? `Position approximative (± ${fmtKm(precision / 1000)}) : activez la localisation précise de l'appareil.`
+        : `Position trouvée (± ${precision} m).`;
+      if (!$("#f-rayon").value) $("#f-rayon").value = 30;
+      rechercher();
+    },
+    (err) => {
+      statut.textContent = err.code === err.PERMISSION_DENIED
+        ? "Localisation refusée : autorisez-la dans le navigateur, ou saisissez une commune."
+        : "Position introuvable : saisissez une commune.";
+    },
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+  );
 }
 
 // --- Administration des calendriers PDF (CDE 91, Ligue IDF) ---------------------------------
@@ -369,6 +410,7 @@ function titreImpression(p, n) {
   const reg = $("#f-region").selectedOptions[0];
   if (p.get("region") && reg) morceaux.push(reg.textContent);
   if (p.get("ville")) morceaux.push(p.get("ville"));
+  if (p.get("rayon")) morceaux.push(`à moins de ${p.get("rayon")} km de ${p.get("pres_de") || "ma position"}`);
   return `Compétitions d'escrime${morceaux.length ? " – " + morceaux.join(" · ") : ""} (${n})`;
 }
 
@@ -414,7 +456,7 @@ function afficherListe() {
             <div class="quand">${esc(periode(c))}${c.horaire ? `<small class="horaire">${esc(c.horaire)}</small>` : ""}</div>
             <div class="quoi">
               <strong>${esc(c.titre)}</strong>
-              <span class="meta">${esc(c.lieu)}${c.departement ? ` (${esc(c.departement)})` : ""} · ${esc(c.categories_libelle || c.categories.join(", "))}${niveau(c) ? ` · ${esc(niveau(c))}` : ""}</span>
+              <span class="meta">${esc(c.lieu)}${c.departement ? ` (${esc(c.departement)})` : ""} · ${esc(c.categories_libelle || c.categories.join(", "))}${niveau(c) ? ` · ${esc(niveau(c))}` : ""}${c.distance_km != null ? ` · <span class="distance">${esc(fmtKm(c.distance_km))}</span>` : ""}</span>
             </div>
             <div class="badges">${c.officielle ? `<span class="badge-officielle">officielle</span>` : ""}${badgesArmes(c.armes)}${c.sources.map((s) => `<span class="source">${esc(SOURCES[s] || s)}</span>`).join("")}</div>
           </li>`).join("")}
@@ -541,6 +583,13 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#form-api").addEventListener("submit", (e) => { e.preventDefault(); connecter(); });
   $("#form-filtres").addEventListener("submit", (e) => { e.preventDefault(); rechercher(); });
   $("#f-region").addEventListener("change", majDepartements);
+  $("#f-ma-position").addEventListener("click", localiser);
+  $("#f-pres-de").addEventListener("input", () => {
+    // Une commune saisie remplace la position du navigateur
+    $("#f-lat").value = "";
+    $("#f-lon").value = "";
+    $("#f-position-etat").textContent = "";
+  });
   $("#reinitialiser").addEventListener("click", () => { appliquerParametres(new URLSearchParams()); rechercher(); });
   $("#imprimer").addEventListener("click", () => window.print());
   $("#reconstruire").addEventListener("click", reconstruire);

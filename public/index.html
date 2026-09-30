@@ -46,6 +46,16 @@
           <label>Ville <input id="f-ville" name="ville" type="search" placeholder="ex. savigny"></label>
         </fieldset>
         <fieldset>
+          <legend>Distance</legend>
+          <label>Autour de <input id="f-pres-de" name="pres_de" type="search" placeholder="Commune, ex. Savigny-sur-Orge"></label>
+          <button type="button" id="f-ma-position" class="petit">Utiliser ma position</button>
+          <span id="f-position-etat" class="aide position-etat"></span>
+          <input type="hidden" id="f-lat" name="lat">
+          <input type="hidden" id="f-lon" name="lon">
+          <label>À moins de <input id="f-rayon" name="rayon" type="number" min="1" max="2000" step="1" placeholder="km" inputmode="numeric"> km</label>
+          <span class="aide">Distance à vol d'oiseau, depuis le centre de la commune du lieu.</span>
+        </fieldset>
+        <fieldset>
           <legend>Période</legend>
           <label>Du <input id="f-date-debut" name="date_debut" type="date"></label>
           <label>Au <input id="f-date-fin" name="date_fin" type="date"></label>
