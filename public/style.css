@@ -80,6 +80,18 @@ legend { font-weight: 600; font-size: .85rem; text-transform: uppercase; color: 
 .ligne-sources #reconstruire { font-size: .8rem; padding: .2rem .7rem; }
 .ligne-sources #reconstruire[disabled] { opacity: .6; cursor: progress; }
 .ligne-sources .aide { margin: 0; }
+.admin .tableau { width: 100%; border-collapse: collapse; font-size: .85rem; margin: .6rem 0; }
+.admin .tableau th, .admin .tableau td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid var(--bord); vertical-align: top; }
+.admin .tableau th { color: var(--doux); font-weight: 600; }
+.admin .tableau a { word-break: break-all; }
+.mode { font-size: .75rem; border-radius: 4px; padding: .05rem .4rem; border: 1px solid var(--bord); }
+.mode-fichier, .mode-lien { background: #fff4e0; border-color: #f0c27a; }
+.remplacer { display: grid; gap: .6rem; max-width: 36rem; }
+.remplacer select, .remplacer input[type=url] { width: 100%; padding: .35rem; border: 1px solid var(--bord); border-radius: 6px; margin-top: .2rem; }
+.remplacer .rc-type { display: flex; gap: 1rem; margin: 0; }
+.remplacer .rc-type legend { margin-bottom: .2rem; }
+.remplacer [hidden] { display: none; }
+.remplacer .aide { margin: 0; }
 .sources-etat { display: flex; gap: .5rem; flex-wrap: wrap; font-size: .8rem; }
 .sources-etat span { padding: .15rem .6rem; border-radius: 999px; border: 1px solid var(--bord); background: var(--carte); }
 .sources-etat .ok::before { content: "● "; color: var(--ok); }

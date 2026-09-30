@@ -91,6 +91,28 @@
           puis importez le fichier (Google Agenda → Paramètres → Importer).</p>
       </details>
 
+      <details class="abonnement admin" id="admin-calendriers">
+        <summary>Remplacer un calendrier (CDE 91, Ligue Fleuret / Épée / Sabre)</summary>
+        <div id="rc-etat"></div>
+        <form id="form-remplacer" class="remplacer">
+          <label>Calendrier à remplacer <select id="rc-cible"></select></label>
+          <fieldset class="rc-type">
+            <legend>Nouveau calendrier</legend>
+            <label><input type="radio" name="rc-type" value="fichier" checked> Fichier PDF</label>
+            <label><input type="radio" name="rc-type" value="lien"> Lien web</label>
+          </fieldset>
+          <input id="rc-fichier" type="file" accept="application/pdf,.pdf">
+          <input id="rc-lien" type="url" placeholder="https://…/calendrier.pdf" hidden>
+          <div class="actions">
+            <button type="submit" class="principal">Remplacer…</button>
+            <button type="button" id="rc-retablir">Revenir au calendrier du site</button>
+          </div>
+          <p id="rc-statut" class="aide" role="status"></p>
+          <p class="aide">Seul le calendrier choisi est écrasé (remplacer le fleuret ne touche pas l'épée). Il reste en place,
+            même après l'analyse quotidienne, jusqu'à « Revenir au calendrier du site ». Jeton d'administration requis.</p>
+        </form>
+      </details>
+
       <div class="ligne-sources">
         <div id="sources-etat" class="sources-etat"></div>
         <button type="button" id="reconstruire" title="Retélécharge et réanalyse les calendriers PDF du CDE 91 et de la Ligue IDF (jeton d'administration requis)">

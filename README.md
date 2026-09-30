@@ -26,5 +26,10 @@ Ouvrir http://127.0.0.1:8080 (ou le port choisi dans `WEB_PORT`)
   Les filtres sont reportés dans l'URL de la page (on peut la partager ou la mettre en favori).
 - Vue **Liste** (par mois) et vue **Mois** (grille calendrier), avec une mise en page pour l'**impression**.
 - Clic sur une compétition : détail, note d'organisation, site de l'organisateur, ajout de l'événement à Google Agenda.
+- **Reconstruire les calendriers CDE et Ligue** : relance leur téléchargement et leur analyse (jeton d'administration).
+- **Remplacer un calendrier** (CDE 91, Ligue Fleuret, Épée, Sabre) par un fichier PDF ou un lien web, avec confirmation ;
+  seul le calendrier choisi est écrasé ; « Revenir au calendrier du site » annule le remplacement.
+  Le tableau montre, pour chacun, le calendrier utilisé (site, fichier déposé ou lien) et depuis quand.
+  Dans le détail d'une compétition, un bouton par calendrier qui la mentionne ouvre ce calendrier.
 - **S'abonner / exporter** : URL du flux `.ics` correspondant aux filtres, téléchargement, lien d'abonnement Google Agenda
   (l'abonnement ne marche qu'une fois l'API publiée sur une URL publique).

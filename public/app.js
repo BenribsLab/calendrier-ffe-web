@@ -27,6 +27,7 @@ const etat = {
   moisAffiche: null, // Date (1er du mois) pour la vue Mois
   departements: [],
   requete: 0,
+  cibles: [], // calendriers remplaçables (CDE 91, Ligue Fleuret / Épée / Sabre)
 };
 
 // --- Stockage local (préférences du testeur) ---------------------------------------------
@@ -80,6 +81,7 @@ async function connecter() {
     pastille.title = e.message;
     remplirReferentiel({});
   }
+  chargerCalendriers();
   appliquerParametres(new URLSearchParams(location.search));
   await rechercher();
 }
@@ -182,16 +184,35 @@ async function rechercher() {
   }
 }
 
-// --- Reconstruction des calendriers PDF (CDE 91, Ligue IDF) ---------------------------------
+// --- Administration des calendriers PDF (CDE 91, Ligue IDF) ---------------------------------
+
+function jetonAdmin() {
+  let jeton = lirePref("jeton-admin", "");
+  if (!jeton) jeton = (window.prompt("Jeton d'administration de l'API (CAL_ADMIN_TOKEN du fichier .env) :") || "").trim();
+  return jeton;
+}
+
+/** Appel d'une route d'administration : jeton demandé si besoin, oublié s'il est refusé. */
+async function appelAdmin(chemin, options = {}) {
+  const jeton = jetonAdmin();
+  if (!jeton) throw new Error("jeton d'administration requis");
+  const r = await fetch(etat.api + chemin, { ...options, headers: { ...(options.headers || {}), Authorization: `Bearer ${jeton}` } });
+  if (r.status === 401) {
+    ecrirePref("jeton-admin", "");
+    throw new Error("jeton refusé");
+  }
+  if (!r.ok) {
+    let detail = `${r.status} ${r.statusText}`;
+    try { detail = (await r.json()).detail || detail; } catch { /* pas du JSON */ }
+    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+  }
+  ecrirePref("jeton-admin", jeton);
+  return r.json();
+}
 
 async function reconstruire() {
   const bouton = $("#reconstruire");
   const statut = $("#reconstruire-etat");
-  let jeton = lirePref("jeton-admin", "");
-  if (!jeton) {
-    jeton = (window.prompt("Jeton d'administration de l'API (CAL_ADMIN_TOKEN du fichier .env) :") || "").trim();
-    if (!jeton) return;
-  }
   const libelle = bouton.textContent;
   bouton.disabled = true;
   statut.textContent = "";
@@ -199,26 +220,131 @@ async function reconstruire() {
   try {
     for (const source of ["cde91", "idf"]) {
       bouton.textContent = `Reconstruction ${SOURCES[source]}…`;
-      const r = await fetch(`${etat.api}/calendriers/${source}/refresh`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${jeton}` },
-      });
-      if (r.status === 401) {
-        ecrirePref("jeton-admin", "");
-        throw new Error("jeton refusé");
-      }
-      if (!r.ok) throw new Error(`${SOURCES[source]} : ${r.status} ${r.statusText}`);
-      const d = await r.json();
+      const d = await appelAdmin(`/calendriers/${source}/refresh`, { method: "POST" });
       bilans.push(`${SOURCES[source]} : ${d.erreur ? `erreur (${d.erreur})` : `${d.nb_evenements} événements`}`);
     }
-    ecrirePref("jeton-admin", jeton);
     statut.textContent = `✓ ${bilans.join(" · ")}`;
-    await rechercher();
+    await Promise.all([rechercher(), chargerCalendriers()]);
   } catch (e) {
     statut.textContent = `Échec : ${e.message}${bilans.length ? ` (${bilans.join(" · ")})` : ""}`;
   } finally {
     bouton.disabled = false;
     bouton.textContent = libelle;
+  }
+}
+
+// --- Remplacement d'un calendrier (fichier déposé ou lien web) --------------------------------
+
+const MODES = { site: "Site", fichier: "Fichier déposé", lien: "Lien web" };
+const fmtDateHeure = (iso) => new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+
+async function chargerCalendriers() {
+  try {
+    const calendriers = await appeler("/calendriers");
+    etat.cibles = calendriers.flatMap((cal) => (cal.cibles || []).map((c) => ({ ...c, source: cal.source, sourceLibelle: cal.libelle })));
+  } catch {
+    etat.cibles = [];
+  }
+  const select = $("#rc-cible");
+  const choix = select.value;
+  select.innerHTML = etat.cibles
+    .map((c) => `<option value="${esc(`${c.source}/${c.cible}`)}">${esc(c.libelle)}</option>`)
+    .join("");
+  if (choix) select.value = choix;
+  $("#rc-etat").innerHTML = etat.cibles.length
+    ? `<table class="tableau">
+        <thead><tr><th>Calendrier</th><th>Utilisé actuellement</th><th>Origine</th></tr></thead>
+        <tbody>${etat.cibles.map((c) => `
+          <tr>
+            <td>${esc(c.libelle)}</td>
+            <td>${c.calendriers.length
+              ? c.calendriers.map((f) => `<a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.nom)}</a>`).join("<br>")
+              : "<em>aucun</em>"}</td>
+            <td><span class="mode mode-${esc(c.mode)}">${esc(MODES[c.mode] || c.mode)}</span>${c.depuis ? `<br><small>depuis le ${esc(fmtDateHeure(c.depuis))}</small>` : ""}</td>
+          </tr>`).join("")}
+        </tbody></table>`
+    : `<p class="aide">État des calendriers indisponible.</p>`;
+  majFormulaireRemplacement();
+}
+
+function cibleChoisie() {
+  return etat.cibles.find((c) => `${c.source}/${c.cible}` === $("#rc-cible").value);
+}
+
+function majFormulaireRemplacement() {
+  const parLien = $("#form-remplacer").elements["rc-type"].value === "lien";
+  $("#rc-fichier").hidden = parLien;
+  $("#rc-lien").hidden = !parLien;
+  const cible = cibleChoisie();
+  $("#rc-retablir").disabled = !cible || cible.mode === "site";
+}
+
+function decrireActuel(cible) {
+  const noms = cible.calendriers.map((f) => f.nom).join(", ") || "aucun";
+  return `${MODES[cible.mode] || cible.mode} : ${noms}`;
+}
+
+async function remplacerCalendrier(e) {
+  e.preventDefault();
+  const cible = cibleChoisie();
+  if (!cible) return;
+  const parLien = $("#form-remplacer").elements["rc-type"].value === "lien";
+  const corps = new FormData();
+  let nouveau;
+  if (parLien) {
+    const lien = $("#rc-lien").value.trim();
+    if (!lien) { $("#rc-statut").textContent = "Indiquez le lien du calendrier PDF."; return; }
+    corps.append("lien", lien);
+    nouveau = `le lien ${lien}`;
+  } else {
+    const fichier = $("#rc-fichier").files[0];
+    if (!fichier) { $("#rc-statut").textContent = "Choisissez un fichier PDF."; return; }
+    corps.append("fichier", fichier, fichier.name);
+    nouveau = `le fichier « ${fichier.name} »`;
+  }
+  const ok = window.confirm(
+    `Remplacer « ${cible.libelle} » ?\n\n` +
+    `Actuel — ${decrireActuel(cible)}\n` +
+    `Nouveau — ${nouveau}\n\n` +
+    `L'ancien calendrier sera écrasé. Les autres calendriers ne sont pas modifiés.\n` +
+    `Le nouveau calendrier est vérifié avant : s'il ne contient aucune compétition pour « ${cible.libelle} », il est refusé.`,
+  );
+  if (!ok) return;
+  await actionCalendrier(`Remplacement de « ${cible.libelle} »…`, async () => {
+    const d = await appelAdmin(`/calendriers/${cible.source}/cibles/${cible.cible}`, { method: "POST", body: corps });
+    $("#rc-fichier").value = "";
+    $("#rc-lien").value = "";
+    return `✓ « ${cible.libelle} » remplacé : ${d.nb_evenements} compétitions lues.`;
+  });
+}
+
+async function retablirCalendrier() {
+  const cible = cibleChoisie();
+  if (!cible || cible.mode === "site") return;
+  const ok = window.confirm(
+    `Revenir au calendrier publié sur le site pour « ${cible.libelle} » ?\n\n` +
+    `Actuel — ${decrireActuel(cible)}\n\nLes autres calendriers ne sont pas modifiés.`,
+  );
+  if (!ok) return;
+  await actionCalendrier(`Retour au calendrier du site pour « ${cible.libelle} »…`, async () => {
+    const d = await appelAdmin(`/calendriers/${cible.source}/cibles/${cible.cible}`, { method: "DELETE" });
+    return d.erreur ? `Site injoignable : ${d.erreur}` : `✓ « ${cible.libelle} » : retour au calendrier du site.`;
+  });
+}
+
+async function actionCalendrier(message, action) {
+  const statut = $("#rc-statut");
+  const boutons = $("#form-remplacer").querySelectorAll("button");
+  boutons.forEach((b) => { b.disabled = true; });
+  statut.textContent = message;
+  try {
+    statut.textContent = await action();
+    await Promise.all([chargerCalendriers(), rechercher()]);
+  } catch (err) {
+    statut.textContent = `Échec : ${err.message}`;
+  } finally {
+    boutons.forEach((b) => { b.disabled = false; });
+    majFormulaireRemplacement();
   }
 }
 
@@ -390,7 +516,8 @@ async function ouvrirDetail(id) {
     <div class="liens">
       ${note}
       ${c.site_web ? `<a class="bouton" href="${esc(c.site_web)}" target="_blank" rel="noopener">Site de l'organisateur</a>` : ""}
-      ${c.url ? `<a class="bouton" href="${esc(c.url)}" target="_blank" rel="noopener">${c.id.startsWith("ffe-") ? "Fiche FFE" : `Calendrier ${esc(SOURCES[c.sources[0]] || "")} (PDF)`}</a>` : ""}
+      ${c.id.startsWith("ffe-") && c.url ? `<a class="bouton" href="${esc(c.url)}" target="_blank" rel="noopener">Fiche FFE</a>` : ""}
+      ${(c.calendriers || []).map((cal) => `<a class="bouton" href="${esc(cal.url)}" target="_blank" rel="noopener">${esc(cal.libelle)} (PDF)</a>`).join("")}
       <a class="bouton" href="${esc(lienGoogleEvenement(c))}" target="_blank" rel="noopener">Ajouter à Google Agenda</a>
     </div>`;
 }
@@ -417,6 +544,9 @@ document.addEventListener("DOMContentLoaded", () => {
   $("#reinitialiser").addEventListener("click", () => { appliquerParametres(new URLSearchParams()); rechercher(); });
   $("#imprimer").addEventListener("click", () => window.print());
   $("#reconstruire").addEventListener("click", reconstruire);
+  $("#form-remplacer").addEventListener("submit", remplacerCalendrier);
+  $("#form-remplacer").addEventListener("change", majFormulaireRemplacement);
+  $("#rc-retablir").addEventListener("click", retablirCalendrier);
   $("#ics-copier").addEventListener("click", async () => {
     try { await navigator.clipboard.writeText($("#ics-url").value); $("#ics-copier").textContent = "Copié !"; }
     catch { $("#ics-url").select(); }
