@@ -1,0 +1,20 @@
+# Modèle traité par l'image nginx au démarrage : ${API_URL} est remplacé par la variable d'environnement.
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+    charset utf-8;
+
+    # Adresse de l'API injectée au démarrage (surcharge public/config.js)
+    location = /config.js {
+        default_type application/javascript;
+        add_header Cache-Control "no-store";
+        return 200 'window.CALENDRIER_API = "${API_URL}";\n';
+    }
+
+    location / {
+        add_header Cache-Control "no-cache";
+        try_files $uri $uri/ /index.html;
+    }
+}

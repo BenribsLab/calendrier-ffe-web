@@ -1,0 +1,14 @@
+services:
+  web:
+    build: .
+    image: calendrier-ffe-web
+    container_name: calendrier-ffe-web
+    restart: unless-stopped
+    environment:
+      # Adresse de l'API vue depuis le NAVIGATEUR (pas depuis le conteneur)
+      API_URL: ${API_URL:-http://127.0.0.1:8765}
+    ports:
+      - "127.0.0.1:8080:80"
+    volumes:
+      # Les modifications de public/ sont visibles sans reconstruire l'image (simple rechargement de la page)
+      - ./public:/usr/share/nginx/html:ro

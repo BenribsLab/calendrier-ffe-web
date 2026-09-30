@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calendrier escrime – test</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="config.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="entete">
+    <h1>Calendrier escrime <span class="sous-titre">interface de test</span></h1>
+    <form id="form-api" class="api">
+      <label for="api-url">API</label>
+      <input id="api-url" type="url" required spellcheck="false">
+      <button type="submit">Connecter</button>
+      <span id="api-etat" class="pastille">…</span>
+    </form>
+  </header>
+
+  <div class="page">
+    <aside class="filtres">
+      <form id="form-filtres">
+        <label class="officielle">
+          <input type="checkbox" id="f-officielle" name="officielle" value="true">
+          <span><strong>Compétitions officielles</strong>
+            <small>Calendriers CDE 91 et Ligue IDF · épreuves, championnats et H2036 FFE en Île-de-France · circuits nationaux et championnats de France</small></span>
+        </label>
+        <fieldset>
+          <legend>Sources</legend>
+          <div id="f-sources" class="cases"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Armes</legend>
+          <div id="f-armes" class="cases"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Catégories</legend>
+          <div id="f-categories" class="cases puces"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Lieu</legend>
+          <label>Région <select id="f-region" name="region"><option value="">Toutes</option></select></label>
+          <label>Département <select id="f-departement" name="departement"><option value="">Tous</option></select></label>
+          <label>Ville <input id="f-ville" name="ville" type="search" placeholder="ex. savigny"></label>
+        </fieldset>
+        <fieldset>
+          <legend>Période</legend>
+          <label>Du <input id="f-date-debut" name="date_debut" type="date"></label>
+          <label>Au <input id="f-date-fin" name="date_fin" type="date"></label>
+        </fieldset>
+        <fieldset>
+          <legend>FFE uniquement</legend>
+          <label>Niveau <select id="f-niveau" name="niveau"><option value="">Tous</option></select></label>
+          <label>Épreuves
+            <select id="f-equipe" name="equipe">
+              <option value="">Individuelles et équipes</option>
+              <option value="individuel">Individuelles</option>
+              <option value="equipe">Par équipes</option>
+            </select>
+          </label>
+        </fieldset>
+        <div class="actions">
+          <button type="submit" class="principal">Rechercher</button>
+          <button type="button" id="reinitialiser">Réinitialiser</button>
+        </div>
+      </form>
+    </aside>
+
+    <main>
+      <div class="barre">
+        <div id="resume" class="resume">—</div>
+        <div class="onglets" role="tablist">
+          <button type="button" role="tab" data-vue="liste" aria-selected="true">Liste</button>
+          <button type="button" role="tab" data-vue="mois" aria-selected="false">Mois</button>
+        </div>
+        <button type="button" id="imprimer">Imprimer</button>
+      </div>
+
+      <details class="abonnement">
+        <summary>S'abonner / exporter (.ics)</summary>
+        <p>Flux correspondant aux filtres actuels :</p>
+        <div class="ligne-ics">
+          <input id="ics-url" type="text" readonly>
+          <button type="button" id="ics-copier">Copier</button>
+          <a id="ics-telecharger" class="bouton" download="competitions.ics">Télécharger</a>
+          <a id="ics-google" class="bouton" target="_blank" rel="noopener">Google Agenda</a>
+        </div>
+        <p class="aide">Google Agenda ne peut s'abonner qu'à une URL publique : en local, utilisez « Télécharger »
+          puis importez le fichier (Google Agenda → Paramètres → Importer).</p>
+      </details>
+
+      <div id="sources-etat" class="sources-etat"></div>
+      <h2 id="titre-impression" class="titre-impression"></h2>
+      <div id="resultats" aria-live="polite"></div>
+    </main>
+  </div>
+
+  <dialog id="detail">
+    <form method="dialog"><button class="fermer" aria-label="Fermer">×</button></form>
+    <div id="detail-contenu"></div>
+  </dialog>
+</body>
+</html>
