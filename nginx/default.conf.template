@@ -15,6 +15,7 @@ server {
 
     location / {
         add_header Cache-Control "no-cache";
-        try_files $uri $uri/ /index.html;
+        # Pas de repli sur index.html : une adresse inconnue (ex. un lien de l'API mal configuré) donne une vraie 404
+        try_files $uri $uri/ =404;
     }
 }
